@@ -10,7 +10,7 @@ var jwt=require('jsonwebtoken');
 
 const JWT_SECRET = "rajatIsAGoodBoy";
 
-// Create a User using: POST "/api/auth/createuser". Doesn't require Auth
+// Create a User using: POST "/api/auth/createuser". Doesn't require login
 router.post('/createuser',[
     body('name', 'Enter a valid name').isLength({ min: 3 }),
     body('email', 'Enter a valid email').isEmail(),
@@ -47,15 +47,53 @@ router.post('/createuser',[
 
         const authToken=jwt.sign(data, JWT_SECRET);
         res.json(authToken)
+      }
+      catch(error)
+      { 
+        console.log(error.message);
+        res.status(500).send("Internal Server Error");
+      }
+    } )
+
+
+
+    // Authenticate a User using: POST "/api/auth/login". no login required
+    router.post('/login',[
+      body('email', 'Enter a valid email').isEmail(),
+      body('password', 'Password cannot be null').exists(),
+], async (req, res)=>{
+  const errors = validationResult(req);
+  try{
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const {email, password}=req.body;
+    let user=await User.findOne({email})
+    if(!user)
+    {
+      return res.status(400).json({error: "Please try to login with the correct credentials"})
+    }
+    
+    const passwordCompare= await bcrypt.compare(password, user.password);
+      if(!passwordCompare)
+      {
+        return res.status(400).json({error: "Please try to login with the correct credentials(password)"})
+      }
+      
+      const data={
+        user:{
+          id: user.id
+        }
+      }
+      const authToken=jwt.sign(data, JWT_SECRET);
+      res.json({authToken})
     }
     catch(error)
-    { 
-      console.log("Some error has occured");
+    {
+      console.log(error.message);
+      res.status(500).send("Internal Server Error!")
     }
-    //   .then(user => res.json(user))
-    //   .catch(err=> {console.log(err)
-    // res.json({error: 'Please enter a unique value for email', message: err.message})})
-      res.send("hello world");
-} )
-
-module.exports = router
+  })
+  
+  module.exports = router
