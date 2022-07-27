@@ -20,15 +20,16 @@ router.post('/createuser', [
 ], async (req, res) => {
   //if there are errors return bad request and errors
   const errors = validationResult(req);
+  let sucess=false;
   try {
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({sucess, errors: errors.array() });
     }
 
     //check whether the same email with this email exists
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      return res.status(400).json({ error: "Soory a user already exist with this email. Try using other email" })
+      return res.status(400).json({sucess, error: "Soory a user already exist with this email. Try using other email" })
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -47,7 +48,8 @@ router.post('/createuser', [
     }
 
     const authToken = jwt.sign(data, JWT_SECRET);
-    res.json(authToken)
+    sucess=true;
+    res.json({sucess, authToken})
   }
   catch (error) {
     console.log(error.message);
@@ -63,20 +65,21 @@ router.post('/login', [
   body('password', 'Password cannot be null').exists(),
 ], async (req, res) => {
   const errors = validationResult(req);
+  let sucess=false;
   try {
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ sucess, errors: errors.array() });
     }
 
     const { email, password } = req.body;
     let user = await User.findOne({ email })
     if (!user) {
-      return res.status(400).json({ error: "Please try to login with the correct credentials" })
+      return res.status(400).json({ sucess, error: "Please try to login with the correct credentials" })
     }
 
     const passwordCompare = await bcrypt.compare(password, user.password);
     if (!passwordCompare) {
-      return res.status(400).json({ error: "Please try to login with the correct credentials(password)" })
+      return res.status(400).json({ sucess, error: "Please try to login with the correct credentials(password)" })
     }
 
     const data = {
@@ -85,7 +88,8 @@ router.post('/login', [
       }
     }
     const authToken = jwt.sign(data, JWT_SECRET);
-    res.json({ authToken })
+    sucess=true;
+    res.json({ sucess, authToken })
   }
   catch (error) {
     console.log(error.message);
